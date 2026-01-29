@@ -44,6 +44,17 @@ class XiaohongshuAutoPoster:
             print("\n📝 步骤1: 生成AI文案...")
             if theme == "word":
                 word_for_post = word or "abandon"
+                # 数据库级软去重：生成前先判断是否已生成过
+                if self.recorder and self.recorder.has_posted(word_for_post, level, PROMPT_VERSION):
+                    print(f"跳过已生成过的单词: {word_for_post}")
+                    return {
+                        "success": True,
+                        "skipped": True,
+                        "word": word_for_post,
+                        "level": level,
+                        "prompt_version": PROMPT_VERSION,
+                        "message": "已生成过，已跳过",
+                    }
                 text = self.content_generator.generate_word_post(word_for_post, level=level)
                 content_data = self.content_generator.parse_structured_word_post(text, word_for_post)
             else:

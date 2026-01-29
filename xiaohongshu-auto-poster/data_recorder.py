@@ -70,6 +70,30 @@ class DataRecorder:
             yield conn
         finally:
             conn.close()
+
+    def has_posted(self, word: str, level: str, prompt_version: str) -> bool:
+        """
+        软去重：检查指定 (word, level, prompt_version) 是否已生成/记录过。
+
+        Args:
+            word: 单词
+            level: 难度水平
+            prompt_version: Prompt 版本
+
+        Returns:
+            True 表示已存在记录；False 表示未存在
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT 1 FROM posts
+                WHERE word = ? AND level = ? AND prompt_version = ?
+                LIMIT 1
+                """,
+                (word, level, prompt_version),
+            )
+            return cursor.fetchone() is not None
     
     def record_post(
         self,
