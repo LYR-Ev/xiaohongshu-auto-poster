@@ -9,4 +9,4 @@ lxml>=5.1.0
 flask>=3.0.0
 greenlet==3.0.3
 
-# anthropic>=0.18.0  # 可选：仅在需要 Claude 远程兜底时安装
+# anthropic>=0.18.0  # optional, only needed for Claude remote calls
