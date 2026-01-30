@@ -126,13 +126,37 @@ class ContentGenerator:
     
     def _get_random_word(self, theme: Optional[str] = None) -> str:
         """获取随机单词"""
-        # 这里可以连接单词数据库，暂时使用示例单词
-        common_words = [
-            "serendipity", "ephemeral", "resilient", "eloquent", "meticulous",
-            "ubiquitous", "paradox", "nostalgia", "ambitious", "gratitude"
-        ]
+        # 这里可以连接单词数据库
         import random
-        return random.choice(common_words)
+        from pathlib import Path
+
+        level = theme or "cet4"  # 默认 CET4
+
+        file_map = {
+            "cet4": "data/cet4.txt",
+            "cet6": "data/cet6.txt",
+           
+        }
+
+        word_file = file_map.get(level)
+        if not word_file:
+            raise ValueError(f"Unsupported word level: {level}")
+        
+        path = Path(word_file)
+        if not word_file:
+            raise ValueError(f"Unsupported word level: {level}")
+
+        path = Path(word_file)
+        if not path.exists():
+            raise FileNotFoundError(f"Word list not found: {path}")
+
+        with path.open("r", encoding="utf-8") as f:
+            words = [line.strip() for line in f if line.strip()]
+
+        if not words:
+            raise RuntimeError(f"Word list is empty: {path}")
+
+        return random.choice(words)
     
     def _build_prompt(self, word: str, theme: Optional[str] = None) -> str:
         """构建AI提示词"""
