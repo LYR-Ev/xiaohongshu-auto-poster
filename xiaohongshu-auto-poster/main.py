@@ -67,18 +67,23 @@ class XiaohongshuAutoPoster:
             meta = content_data.get("meta", {})
             prompt_version = meta.get("prompt", PROMPT_VERSION) if meta else PROMPT_VERSION
             
-            # 2. 生成图片（明确输入职责：优先用「配图建议」构建 image_prompt，否则用释义兜底）
+            # 2. 生成图片（文生图优先；失败则模板兜底；图片失败也不影响文案输出）
             print("\n🎨 步骤2: 生成配图...")
             image_suggestion = content_data.get("image_suggestion")
             meaning = self._extract_meaning(content_data["content"]) if not image_suggestion else None
             
-            image_path = self.image_generator.generate_word_image(
-                word=content_data["word"],
-                image_prompt=image_suggestion,  # 明确的配图建议
-                meaning=meaning,  # 兜底用
-                image_style="modern",
-            )
-            print(f"✓ 图片已生成: {image_path}")
+            try:
+                image_path = self.image_generator.generate_word_image(
+                    word=content_data["word"],
+                    image_prompt=image_suggestion,
+                    meaning=meaning,
+                    image_style="modern",
+                    content=content_data.get("content"),
+                )
+                print(f"✓ 图片已生成: {image_path}")
+            except Exception as e:
+                print(f"⚠️ 图片生成失败，继续保存文案: {e}")
+                image_path = None
             
             # 3. 格式化内容
             print("\n📋 步骤3: 格式化内容...")
@@ -89,12 +94,19 @@ class XiaohongshuAutoPoster:
             
             # 4. 发布到小红书（或本地保存）
             print("\n🚀 步骤4: 发布/保存帖子...")
+            images = [image_path] if image_path else []
             if self.publish_mode == "auto":
-                # 自动发布（API / Playwright）
+                # 自动发布（API / Playwright）；无图时仅保存文案
                 result = self.publisher.publish_post(
                     title=content_data['title'],
                     content=formatted_content,
-                    images=[image_path],
+                    images=images,
+                    tags=content_data['tags'],
+                ) if images else self._save_post_to_local(
+                    title=content_data['title'],
+                    content=formatted_content,
+                    image_path=None,
+                    word=content_data['word'],
                     tags=content_data['tags'],
                 )
             else:
@@ -174,13 +186,13 @@ class XiaohongshuAutoPoster:
         self,
         title: str,
         content: str,
-        image_path: str,
+        image_path: Optional[str],
         word: str,
         tags: Optional[list] = None,
     ) -> dict:
         """
         以本地文件形式保存帖子内容，而不真正发布到小红书。
-
+        图片生成失败时 image_path 可为 None，文案照常保存。
         返回结构与 publish_post 类似，方便上层统一处理。
         """
         os.makedirs("output", exist_ok=True)
@@ -216,7 +228,7 @@ class XiaohongshuAutoPoster:
 
         print(f"📝 已保存文案到本地: {text_path}")
         print(f"🧾 已保存结构化 JSON: {json_path}")
-        print(f"🖼 图片路径: {image_path}")
+        print(f"🖼 图片路径: {image_path or '（无）'}")
         print("👉 当前为本地保存模式（PUBLISH_MODE=local），请手动上传到小红书。")
 
         return {
