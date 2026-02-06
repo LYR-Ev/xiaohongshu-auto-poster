@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+.env
+
+# Generated files
+generated_images/
+output/
+
+# OS
+.DS_Store
+Thumbs.db
+posts_data.db
+*.db
+storage/
+playwright/.cache
