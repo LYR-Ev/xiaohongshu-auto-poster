@@ -5,6 +5,7 @@
 import os
 import re
 import base64
+from pathlib import Path
 from typing import Optional, Tuple
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
@@ -16,20 +17,17 @@ SD_API_URL = os.getenv("SD_API_URL", "http://127.0.0.1:7860")
 USE_SD_TXT2IMG = os.getenv("USE_SD_TXT2IMG", "1").strip().lower() in ("1", "true", "yes")
 
 
-# 稳定版正向 Prompt（中文）- 强烈推荐默认使用
+# 稳定版正向 Prompt（中文）- 封面仅小写单词，无释义无多余符号
 SD_PROMPT_STYLE = """【风格说明】
 小红书风格的英语单词学习卡片，
 极简设计，干净的白色或浅米色背景，
 1:1 正方形构图，
-只包含文字，没有任何插画、人物或图形元素，
+只包含一个英文单词，没有任何插画、人物或图形元素，无中文释义，无例句，无标点等多余符号，
 
-顶部是一个醒目的英文单词大标题，
-下面是较小字号的词性加中文释义，
-再下面可以有一行简短的英文例句作为补充，
+顶部居中显示一个醒目的英文单词，使用小写字母，
 
 现代无衬线字体，
-排版清晰，有层级感，
-留白充足，阅读舒适，
+排版清晰，留白充足，阅读舒适，
 整体像一个真实的小红书英语学习账号截图，
 安静、克制、适合收藏"""
 
@@ -45,18 +43,16 @@ SD_NEGATIVE_PROMPT = """人物，真人，卡通，动漫，插画，
 
 def _build_sd_prompt(word: str, subtitle: str, example_sentence: Optional[str]) -> str:
     """
+    封面仅显示小写单词，无中文释义、无例句、无多余符号。
     结构化拼接：【风格说明】+【文字内容】。
-    减少单词被拆开、中英文混乱、SD 乱编内容。
     """
+    word_lower = word.strip().lower() if word else "word"
     lines = [
         SD_PROMPT_STYLE,
         "",
         "【文字内容】",
-        f"单词：{word}",
-        f"释义：{subtitle}",
+        word_lower,
     ]
-    if example_sentence:
-        lines.append(f"例句：{example_sentence}")
     return "\n".join(lines)
 
 
@@ -161,47 +157,39 @@ class ImageGenerator:
         return path
     
     def _generate_template_image(self, word: str, meaning: str) -> str:
-        """使用模板生成图片（备用方案）"""
-        # 创建图片
+        """使用模板生成图片（备用方案）：根目录 bg.png 为背景，每日单词 + 小写单词。"""
         width, height = 1080, 1080
-        img = Image.new('RGB', (width, height), color='#FF6B9D')  # 小红书风格粉色
-        
+        bg_path = Path(__file__).resolve().parent / "bg1.png"
+        if bg_path.exists():
+            img = Image.open(bg_path).convert("RGB").resize((width, height), Image.LANCZOS)
+        else:
+            img = Image.new('RGB', (width, height), color='#C97B84')
         draw = ImageDraw.Draw(img)
-        
-        # 尝试加载字体，如果没有则使用默认字体
+
         try:
-            # Windows系统字体路径
             title_font = ImageFont.truetype("C:/Windows/Fonts/msyhbd.ttc", 80)
-            word_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 60)
-            meaning_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 50)
-        except:
+            word_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 72)
+        except Exception:
             title_font = ImageFont.load_default()
             word_font = ImageFont.load_default()
-            meaning_font = ImageFont.load_default()
-        
-        # 绘制标题
-        title = "📚 每日单词"
+
+        # 标题：每日单词（无 emoji）
+        title = "每日单词"
         title_bbox = draw.textbbox((0, 0), title, font=title_font)
         title_width = title_bbox[2] - title_bbox[0]
-        title_height = title_bbox[3] - title_bbox[1]
         draw.text(((width - title_width) // 2, 200), title, fill='white', font=title_font)
-        
-        # 绘制单词
-        word_bbox = draw.textbbox((0, 0), word.upper(), font=word_font)
+
+        # 封面小写单词，居中（标题下方）
+        word_display = (word or "word").strip().lower()
+        word_bbox = draw.textbbox((0, 0), word_display, font=word_font)
         word_width = word_bbox[2] - word_bbox[0]
-        draw.text(((width - word_width) // 2, 400), word.upper(), fill='white', font=word_font)
-        
-        # 绘制中文释义
-        meaning_bbox = draw.textbbox((0, 0), meaning, font=meaning_font)
-        meaning_width = meaning_bbox[2] - meaning_bbox[0]
-        draw.text(((width - meaning_width) // 2, 550), meaning, fill='white', font=meaning_font)
-        
-        # 添加装饰性元素
-        # 绘制圆形装饰
-        draw.ellipse([width//2 - 150, 700, width//2 + 150, 1000], outline='white', width=5)
-        
-        # 保存图片
-        filename = f"generated_images/{word}_template.png"
+        word_height = word_bbox[3] - word_bbox[1]
+        x = (width - word_width) // 2
+        y = (height - word_height) // 2
+        draw.text((x, y), word_display, fill='white', font=word_font)
+
+        safe_word = (word or "word").replace(" ", "_").strip()
+        filename = f"generated_images/{safe_word}_template.png"
         img.save(filename)
         return filename
     

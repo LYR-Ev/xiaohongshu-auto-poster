@@ -41,6 +41,28 @@ class AllWordsUsedError(Exception):
 _STRUCTURED_SECTIONS = ("【标题】", "【单词卡】", "【配图建议】", "【正文】", "【标签】", "【meta】")
 
 
+def render_xhs_word_content(word: str, 单词卡: str, 正文: str) -> str:
+    """
+    将结构化内容渲染为更像小红书的最终正文。
+    不影响图片生成，仅影响文案观感。
+    """
+    parts = []
+
+    # 开头气氛（非常重要）
+    parts.append(f"📘 今天一起轻松记一个高频单词：**{word}** ✨\n")
+
+    if 单词卡:
+        parts.append("🔑 **核心含义**\n" + 单词卡.strip())
+
+    if 正文:
+        parts.append("🧠 **用法 + 记忆技巧**\n" + 正文.strip())
+
+    # 结尾互动
+    parts.append("👇 收藏起来慢慢看，下一个单词继续一起攻克～")
+
+    return "\n\n".join(parts)
+
+
 class WordLearningParser(StructuredPostParser):
     """单词学习帖解析器（继承基类）"""
     
@@ -59,7 +81,11 @@ class WordLearningParser(StructuredPostParser):
         if not tags:
             tags = ["英语学习", "记单词", "英语词汇", "学习打卡", "英语干货"]
         
-        content = (单词卡 + "\n\n" + 正文).strip() if 单词卡 else 正文
+        content = render_xhs_word_content(
+            word=word,
+            单词卡=单词卡,
+            正文=正文
+        )
         
         meta = self.extract_meta(meta_raw)
         
