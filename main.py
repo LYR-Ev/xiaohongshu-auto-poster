@@ -12,7 +12,8 @@ from xiaohongshu_publisher import XiaohongshuPublisher
 from trigger_manager import TriggerManager, WebhookTrigger
 from data_recorder import DataRecorder
 from prompts.word_learning import PROMPT_VERSION
-from content_generator import AllWordsUsedError
+from content_generator import AllWordsUsedError, LEVEL_WORD_FILES
+
 
 class XiaohongshuAutoPoster:
     """小红书自动发布系统"""
@@ -71,9 +72,17 @@ class XiaohongshuAutoPoster:
                     }
                 text = self.content_generator.generate_word_post(word_for_post, level=level)
                 content_data = self.content_generator.parse_structured_word_post(text, word_for_post)
+                # 唯一格式出口：禁止 main 拼文案，只允许经 Renderer 生成
+                content_data["content"] = self.content_generator.render_word_post_content(content_data)
             else:
-                content_data = self.content_generator.generate_word_content(word=word, theme=theme)
+                content_data = self.content_generator.generate_word_content(
+                    word=word, theme=theme, level=level
+                )
             print(f"✓ 单词: {content_data['word']}")
+            if theme == "word":
+                word_file_path = LEVEL_WORD_FILES.get(level)
+                word_file_name = os.path.basename(word_file_path) if word_file_path else level
+                print(f"✓ 单词库: {word_file_name}")
             print(f"✓ 标题: {content_data['title']}")
             print(f"✓ 标签: {', '.join(content_data['tags'])}")
             

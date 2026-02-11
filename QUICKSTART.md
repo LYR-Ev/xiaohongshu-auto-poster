@@ -85,7 +85,7 @@ python main.py --mode schedule
 A: 默认走本地 Ollama（无需 key）。如果你要启用 Claude 远程兜底，才需要配置 `ANTHROPIC_API_KEY`。
 
 ### Q: 如何修改文案风格？
-A: 编辑 `content_generator.py` 中的 `_build_prompt` 方法，修改提示词。
+A: 编辑 `prompts/word_learning.py` 中的 `build_word_learning_prompt`，系统唯一 Prompt 入口，禁止在别处拼写 Prompt。
 
 ### Q: 如何调整图片风格？
 A: 在调用 `generate_word_image` 时修改 `image_style` 参数，或编辑 `image_generator.py` 中的生成逻辑。

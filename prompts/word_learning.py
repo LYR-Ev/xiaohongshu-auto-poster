@@ -8,17 +8,8 @@ PROMPT_VERSION = "word_learning_v1"
 
 
 def _get_level_specific_guidance(level: str) -> str:
-    """
-    根据难度水平返回内容结构微调指导。
-    
-    Args:
-        level: 难度水平，如 "CET-4"、"CET-6"、"GRE" 等
-    
-    Returns:
-        针对该难度的内容指导文本
-    """
-    level_upper = level.upper()
-    
+    """根据难度水平返回内容结构微调指导。"""
+    level_upper = (level or "").upper()
     if "CET-4" in level_upper or "四级" in level:
         return """
 【内容重点】
@@ -27,23 +18,21 @@ def _get_level_specific_guidance(level: str) -> str:
 - 例句贴近生活：选择日常对话、校园场景
 - 简洁，要求一开始说清楚单词的中文释义
 """
-    elif "CET-6" in level_upper or "六级" in level or "考研" in level:
+    if "CET-6" in level_upper or "六级" in level or "考研" in level:
         return """
 【内容重点】
 - 偏搭配用法：重点讲常见搭配、固定短语
 - 强调语境：说明这个词在什么语境下用，与近义词的区别
 - 例句贴近工作/学术：选择职场、学术场景
 """
-    elif "GRE" in level_upper or "托福" in level_upper or "TOEFL" in level_upper:
+    if "GRE" in level_upper or "托福" in level_upper or "TOEFL" in level_upper:
         return """
 【内容重点】
 - 偏词源词根：讲解词根词缀，帮助理解词义演变
 - 强调学术例句：选择学术论文、正式文本中的例句
 - 深度辨析：与同义词、近义词的细微差别
 """
-    else:
-        # 默认（通用）
-        return """
+    return """
 【内容重点】
 - 记忆技巧：联想、场景记忆等
 - 实用例句：贴近日常使用
@@ -51,14 +40,14 @@ def _get_level_specific_guidance(level: str) -> str:
 """
 
 
-def build_word_learning_prompt(word: str, level: str = "CET-6") -> str:
+def build_word_learning_prompt(word: str, level: str = "CET6") -> str:
     """
     构建英语单词学习类小红书 Prompt。
     要求模型按【标题】【单词卡】【配图建议】【正文】【标签】【meta】六段式输出。
 
     Args:
         word: 要学习的英语单词
-        level: 难度水平，如 "CET-4"、"CET-6"、"考研" 等，默认 "CET-6"
+        level: 难度水平，如 "CET4"、"CET6"、"考研" 等，默认 "CET6"
 
     Returns:
         可直接传给 LLM 的 prompt 字符串
@@ -73,7 +62,7 @@ def build_word_learning_prompt(word: str, level: str = "CET-6") -> str:
 
 【核心要求】
 - 学习单词：{word}
-- 难度水平：{level}
+
 - 整体风格：{tone}
 - 目标读者：英语学习者 / 上班族 / 学生 / 四六级考生 / 考研考生
 
@@ -85,17 +74,33 @@ def build_word_learning_prompt(word: str, level: str = "CET-6") -> str:
 （写一行吸引眼球的标题，15～25 字，可含 emoji）
 
 【单词卡】
-（适合做成封面图的内容：单词英文小写、中文核心含义 1 条，简洁）
+（适合做成封面图的内容：单词英文小写，中文释义(只按照词典输出单词的标准释义。
+严格规则：
+1. 只输出词性和对应的中文释义
+2. 不解释、不举例、不扩展
+3. 不使用完整句
+4. 不允许任何词性下的释义为空
+5. 每个词性至少给出 1 个常见、标准中文释义
+6. 如果该词性不存在，则不要输出该词性
+
+输出格式（必须严格一致，只适用于中文释义）：
+<单词>
+n: 中文释义1；中文释义2
+v: 中文释义1；中文释义2
+adj: 中文释义1；中文释义2
+adv: 中文释义1；中文释义2))
+
+注意要适当换行，不要让单词卡内容过长，影响阅读体验。
 
 【配图建议】
 （用一两句话描述「这张配图建议画什么 / 放什么元素」，供后期自动生成配图使用，例如：主画面是单词 abandon 小字体，背景为纯色，色调偏灰蓝）
 
 【正文】
 （包含：单词讲解、实用例句、记忆技巧、小红书风格总结 2～3 句 + 引导点赞/收藏。段落清晰，适合手机阅读，emoji 适度）
-【必选】实用例句模块：至少 2 条例句，每条必须中英文对照（先英文句子，后跟中文翻译，缺一不可）。
-
+【必选】实用例句模块：至少 2 条例句，每条必须中英文对照（先英文句子，后跟中文翻译，缺一不可,保证例句里面有该单词）。
+【必选】相关词汇扩展(英语单词+中文释义，2-3个)
 【标签】
-（一行，格式如：#英语学习  #CET4  #记单词  #考研英语 …… 10 个标签，不要换行，不要重复）
+（一行，格式如：#英语学习  #CET6  #记单词  #考研英语 …… 10 个标签，不要换行，不要重复，不要出现与英语学习无关的话题标签）
 
 【meta】
 prompt={PROMPT_VERSION}
