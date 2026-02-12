@@ -1,19 +1,12 @@
 """
 AI文案生成模块
-支持本地 Ollama / Anthropic 等生成记单词文案
+支持本地 Ollama 生成记单词文案，唯一 Prompt 入口为 prompts.word_learning.build_word_learning_prompt。
 """
-import os
 import re
 import random
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Callable
 from dotenv import load_dotenv
-
-# Anthropic 作为可选软依赖：没安装或没配 key 时自动退回本地 Ollama
-try:
-    from anthropic import Anthropic  # type: ignore
-except ImportError:  # 未安装 anthropic 时不报错
-    Anthropic = None  # type: ignore
 
 from llm_client import generate_text
 from prompts.word_learning import build_word_learning_prompt, PROMPT_VERSION
@@ -41,10 +34,6 @@ class AllWordsUsedError(Exception):
     def __init__(self, level: str):
         self.level = level
         super().__init__(f"该级别单词已全部使用完毕: {level}（word + level + prompt_version 均在 posts 中已有记录）")
-
-# 结构化输出中的段落标记，用于解析（包含【meta】）
-_STRUCTURED_SECTIONS = ("【标题】", "【单词卡】", "【配图建议】", "【正文】", "【标签】", "【meta】")
-
 
 # 分段兜底正则：任意命中即视为该段开始，避免模型换说法（例句/Examples/实用例子）导致拆段失败
 EXAMPLE_SPLIT_PATTERNS = [
@@ -175,14 +164,7 @@ class ContentGenerator:
     """AI文案生成器"""
     
     def __init__(self):
-        # 仅保留 Anthropic 作为可选远程备份，本地默认走 Ollama
-        self.anthropic_client = None
-        self.word_parser = WordLearningParser()  # 使用解析器实例
-
-        # 初始化 Anthropic 客户端（软依赖：既要装了包，又要配了 key 才会启用）
-        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-        if Anthropic and anthropic_key and anthropic_key != "your_anthropic_api_key_here":  # type: ignore
-            self.anthropic_client = Anthropic(api_key=anthropic_key)  # type: ignore
+        self.word_parser = WordLearningParser()
     
     def generate_word_post(self, word: str, level: str = "CET-6") -> str:
         """

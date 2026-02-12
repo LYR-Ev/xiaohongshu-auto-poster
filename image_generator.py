@@ -192,31 +192,3 @@ class ImageGenerator:
         filename = f"generated_images/{safe_word}_template.png"
         img.save(filename)
         return filename
-    
-    def create_collage(self, images: list, output_path: str) -> str:
-        """创建拼图（多张图片组合）"""
-        if not images:
-            raise ValueError("图片列表不能为空")
-        
-        # 加载所有图片
-        loaded_images = []
-        for img_path in images:
-            if os.path.exists(img_path):
-                loaded_images.append(Image.open(img_path))
-        
-        if not loaded_images:
-            raise ValueError("没有有效的图片")
-        
-        # 创建拼图（横向排列）
-        total_width = sum(img.width for img in loaded_images)
-        max_height = max(img.height for img in loaded_images)
-        
-        collage = Image.new('RGB', (total_width, max_height), color='white')
-        
-        x_offset = 0
-        for img in loaded_images:
-            collage.paste(img, (x_offset, 0))
-            x_offset += img.width
-        
-        collage.save(output_path)
-        return output_path
