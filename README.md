@@ -69,7 +69,14 @@ python main.py --mode schedule
 # Webhook 模式，端口 9000
 python main.py --mode webhook --port 9000
 ```
+以后新项目建议直接用这个流程创建：
 
+git init
+git add .
+git commit -m "init"
+git branch -M main
+git remote add origin 仓库地址
+git push -u origin main
 
 ---
 
