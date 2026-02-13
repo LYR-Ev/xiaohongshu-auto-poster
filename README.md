@@ -58,6 +58,8 @@ python main.py --word serendipity --theme word
 # 发一篇六级难度单词帖
 python main.py --word abandon --theme word --level CET-6
 
+python main.py --theme word --level CET-6
+
 # 只看数据分析（不发帖）
 python main.py --mode analytics
 
@@ -67,6 +69,7 @@ python main.py --mode schedule
 # Webhook 模式，端口 9000
 python main.py --mode webhook --port 9000
 ```
+
 
 ---
 
