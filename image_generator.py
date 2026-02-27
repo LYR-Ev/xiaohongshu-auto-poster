@@ -157,36 +157,29 @@ class ImageGenerator:
         return path
     
     def _generate_template_image(self, word: str, meaning: str) -> str:
-        """使用模板生成图片（备用方案）：根目录 bg.png 为背景，每日单词 + 小写单词。"""
-        width, height = 1080, 1080
-        bg_path = Path(__file__).resolve().parent / "bg1.png"
+        """使用模板生成图片（备用方案）：根目录 bg1.jpg 为背景（保持原尺寸），仅显示小写英文单词。"""
+        bg_path = Path(__file__).resolve().parent / "bg1.jpg"
         if bg_path.exists():
-            img = Image.open(bg_path).convert("RGB").resize((width, height), Image.LANCZOS)
+            img = Image.open(bg_path).convert("RGB")
+            width, height = img.size
         else:
+            width, height = 1080, 1080
             img = Image.new('RGB', (width, height), color='#C97B84')
         draw = ImageDraw.Draw(img)
 
         try:
-            title_font = ImageFont.truetype("C:/Windows/Fonts/msyhbd.ttc", 80)
-            word_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 72)
+            word_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 56)
         except Exception:
-            title_font = ImageFont.load_default()
             word_font = ImageFont.load_default()
 
-        # 标题：每日单词（无 emoji）
-        title = "每日单词"
-        title_bbox = draw.textbbox((0, 0), title, font=title_font)
-        title_width = title_bbox[2] - title_bbox[0]
-        draw.text(((width - title_width) // 2, 200), title, fill='white', font=title_font)
-
-        # 封面小写单词，居中（标题下方）
+        # 仅显示小写英文单词，黑色字体，适中大小、居中（参照笔记纸风格，字体不过大）
         word_display = (word or "word").strip().lower()
         word_bbox = draw.textbbox((0, 0), word_display, font=word_font)
         word_width = word_bbox[2] - word_bbox[0]
         word_height = word_bbox[3] - word_bbox[1]
         x = (width - word_width) // 2
         y = (height - word_height) // 2
-        draw.text((x, y), word_display, fill='white', font=word_font)
+        draw.text((x, y), word_display, fill='black', font=word_font)
 
         safe_word = (word or "word").replace(" ", "_").strip()
         filename = f"generated_images/{safe_word}_template.png"
