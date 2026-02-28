@@ -168,7 +168,7 @@ class ImageGenerator:
         draw = ImageDraw.Draw(img)
 
         try:
-            word_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 56)
+            word_font = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 72)
         except Exception:
             word_font = ImageFont.load_default()
 
